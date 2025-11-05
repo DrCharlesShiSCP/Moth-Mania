@@ -4,7 +4,7 @@ using TMPro;
 
 public class MothFlockController : MonoBehaviour
 {
-    public enum FlockState { FollowLine, SeekLight }
+    public enum FlockState { Mixed, SeekLight, FollowLine }
 
     [Header("References")]
     public Transform player;
@@ -21,8 +21,8 @@ public class MothFlockController : MonoBehaviour
     public string onText = "ON";
     public string offText = "OFF";
 
-    [Header("Recall Rule (sticky while OFF)")]
-    [Tooltip("When headlight turns OFF, if the player is within this range of the nearest Lightpole, recall latches and babies keep following even after leaving that range. Turning ON clears the latch.")]
+    [Header("Pickup / Recall")]
+    [Tooltip("Player must be within this range of a pole to recall ONLY the moths orbiting that pole (sticky while OFF).")]
     public float playerLightReturnRange = 6f;
 
     [Header("Follow Line Settings")]
@@ -68,7 +68,6 @@ public class MothFlockController : MonoBehaviour
     Vector3 lastTrailPos;
     float computedTrailLength;
 
-    bool recallLatched = false; // stays true while headlight is OFF once latched
     bool prevHeadlightOn;
 
     class OrbitInfo
@@ -77,29 +76,28 @@ public class MothFlockController : MonoBehaviour
         public float radius;      // fixed orbit radius
         public int spinDir;       // +1 or -1 for CW/CCW variety
     }
+
     readonly Dictionary<Transform, OrbitInfo> orbiting = new Dictionary<Transform, OrbitInfo>();
+    readonly HashSet<Transform> recalledMoths = new HashSet<Transform>(); // sticky while OFF
     System.Random rng;
 
     void Start()
     {
-        globalLights.SetActive(headlightOn);
-        //headlampitselfRed.SetActive(headlightOn);
-        nightVisionVolume.SetActive(headlightOn);
         if (player == null)
         {
             Debug.LogError("[MothFlockController] Player is not assigned.");
             enabled = false; return;
         }
 
+        if (globalLights) globalLights.SetActive(headlightOn);
+        if (nightVisionVolume) nightVisionVolume.SetActive(headlightOn);
+        if (headlampitselfRed) headlampitselfRed.SetActive(!headlightOn);
+
         rng = new System.Random(gameObject.GetInstanceID());
         prevHeadlightOn = headlightOn;
         UpdateHeadlightUI();
 
-        // Initialize latch if we start OFF and near a pole
-        Transform nearest = FindNearestLightTo(player.position, out float d);
-        recallLatched = !headlightOn && nearest != null && d <= playerLightReturnRange;
-
-        RebuildTrail();
+        RebuildTrail(0); // no followers at start if lamp is ON; otherwise will build next frame
     }
 
     void Update()
@@ -109,47 +107,69 @@ public class MothFlockController : MonoBehaviour
         {
             headlightOn = !headlightOn;
             UpdateHeadlightUI();
-            headlampitselfRed.SetActive(!headlightOn);
+            if (headlampitselfRed) headlampitselfRed.SetActive(!headlightOn);
         }
 
-        // Manage sticky recall latch on transitions
+        // Clear sticky recalls when turning ON
         if (headlightOn && !prevHeadlightOn)
         {
-            // Just turned ON ¡ú clear latch and orbits (they'll re-acquire poles)
-            recallLatched = false;
-        }
-        else if (!headlightOn && prevHeadlightOn)
-        {
-            // Just turned OFF ¡ú latch if within proximity NOW
-            Transform nearest = FindNearestLightTo(player.position, out float dNow);
-            if (nearest != null && dNow <= playerLightReturnRange)
-                recallLatched = true;
+            recalledMoths.Clear();
+            orbiting.Clear(); // let them re-acquire poles cleanly
         }
         prevHeadlightOn = headlightOn;
 
-        // Decide behavior
         if (headlightOn)
         {
-            if (state != FlockState.SeekLight) state = FlockState.SeekLight;
-            SeekNearestLightpolesAndOrbit();
+            // Everyone seeks/orbits
+            state = FlockState.SeekLight;
+            SeekNearestLightpolesAndOrbit(skipMoths: null);
+            return;
         }
-        else if (recallLatched)
+
+        // Lamp is OFF -> per-pole pickup:
+        // 1) Find all poles within pickup range of player
+        // 2) For each such pole, add ONLY moths currently orbiting that pole to recalledMoths (sticky)
+        var nearPoles = GetPolesWithinRange(player.position, playerLightReturnRange);
+
+        if (nearPoles.Count > 0)
         {
-            // Recall follow mode while OFF (sticky)
-            if (state != FlockState.FollowLine)
+            foreach (var kvp in orbiting)
             {
-                state = FlockState.FollowLine;
-                orbiting.Clear();   // stop orbiting on recall
-                RebuildTrail();     // snap formation
+                Transform moth = kvp.Key;
+                Transform pole = kvp.Value.center;
+                if (pole == null) continue;
+
+                // snap X if needed to compare in lane space
+                Vector3 polePos = pole.position;
+                if (lockXToPlayer) polePos.x = player.position.x;
+                foreach (var np in nearPoles)
+                {
+                    if (np == pole)
+                    {
+                        recalledMoths.Add(moth); // latch this moth
+                        break;
+                    }
+                }
             }
-            UpdateTrailFromPlayer();
-            PlaceMothsAlongTrail();
         }
-        else
+
+        // Followers: recalled moths (sticky until lamp ON)
+        // Non-followers: everyone else -> continue seeking/orbiting
+        var followers = GetFollowersInOrder();
+
+        // Build/maintain trail for followers
+        if (followers.Count > 0)
         {
-            if (state != FlockState.SeekLight) state = FlockState.SeekLight;
-            SeekNearestLightpolesAndOrbit();
+            if (Mathf.Abs(computedTrailLength - followGapDistance * (followers.Count + 1)) > 0.001f)
+                RebuildTrail(followers.Count);
+
+            UpdateTrailFromPlayer();
+            PlaceFollowersAlongTrail(followers);
         }
+
+        // Others keep orbiting/seeking
+        state = followers.Count > 0 ? FlockState.Mixed : FlockState.SeekLight;
+        SeekNearestLightpolesAndOrbit(skipMoths: recalledMoths);
     }
 
     // ---------------- UI ----------------
@@ -159,13 +179,27 @@ public class MothFlockController : MonoBehaviour
             headlightStatusText.text = headlightOn ? onText : offText;
 
         if (nightVisionVolume != null)
-            nightVisionVolume.SetActive(headlightOn); // night vision ON when lamp OFF
+            nightVisionVolume.SetActive(headlightOn); // your original mapping
         if (globalLights != null)
-            globalLights.SetActive(headlightOn); // global lights ON when lamp ON
-
+            globalLights.SetActive(headlightOn);
     }
 
-    // ---------------- Light search ----------------
+    // ---------------- Helpers: Poles ----------------
+    List<Transform> GetPolesWithinRange(Vector3 pos, float range)
+    {
+        float r2 = range * range;
+        var results = new List<Transform>();
+        var lights = GameObject.FindGameObjectsWithTag(lightpoleTag);
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Vector3 lp = lights[i].transform.position;
+            if (lockXToPlayer) lp.x = player.position.x;
+            if ((lp - pos).sqrMagnitude <= r2)
+                results.Add(lights[i].transform);
+        }
+        return results;
+    }
+
     Transform FindNearestLightTo(Vector3 pos, out float distance)
     {
         distance = float.PositiveInfinity;
@@ -181,7 +215,7 @@ public class MothFlockController : MonoBehaviour
         return best;
     }
 
-    // ---------------- FOLLOW LINE ----------------
+    // ---------------- FOLLOW LINE (followers only) ----------------
     void UpdateTrailFromPlayer()
     {
         Vector3 p = player.position;
@@ -220,14 +254,14 @@ public class MothFlockController : MonoBehaviour
             trail.RemoveAt(0);
     }
 
-    void PlaceMothsAlongTrail()
+    void PlaceFollowersAlongTrail(List<Transform> followers)
     {
         if (trail.Count < 2) return;
         float totalDist = (trail.Count - 1) * 0.05f;
 
-        for (int i = 0; i < mothBabies.Count; i++)
+        for (int i = 0; i < followers.Count; i++)
         {
-            Transform m = mothBabies[i];
+            Transform m = followers[i];
             if (m == null) continue;
 
             float behind = Mathf.Min(followGapDistance * (i + 1), totalDist - 0.01f);
@@ -236,7 +270,6 @@ public class MothFlockController : MonoBehaviour
 
             m.position = Vector3.Lerp(m.position, target, followLerp * Time.deltaTime);
 
-            // face along Z (optional)
             Vector3 vel = target - m.position; vel.y = 0f;
             if (vel.sqrMagnitude > 0.0001f)
                 m.forward = Vector3.Lerp(m.forward, new Vector3(0, 0, Mathf.Sign(vel.z == 0 ? 1f : vel.z)), 12f * Time.deltaTime);
@@ -257,13 +290,13 @@ public class MothFlockController : MonoBehaviour
         return trail[0];
     }
 
-    void RebuildTrail()
+    void RebuildTrail(int followerCount)
     {
         trail.Clear();
         gapMetersAccum = 0f;
         lastTrailPos = player.position;
 
-        computedTrailLength = followGapDistance * (mothBabies.Count + 1);
+        computedTrailLength = followGapDistance * (followerCount + 1);
 
         Vector3 dir = Vector3.back;
         Vector3 p = player.position;
@@ -275,8 +308,21 @@ public class MothFlockController : MonoBehaviour
             trail.Add(p + dir * (i * segmentLen));
     }
 
+    List<Transform> GetFollowersInOrder()
+    {
+        // Use original mothBabies order for stable formation, filtered by recalled set
+        var list = new List<Transform>();
+        for (int i = 0; i < mothBabies.Count; i++)
+        {
+            var m = mothBabies[i];
+            if (m != null && recalledMoths.Contains(m))
+                list.Add(m);
+        }
+        return list;
+    }
+
     // ---------------- SEEK LIGHT + ORBIT (RotateAround) ----------------
-    void SeekNearestLightpolesAndOrbit()
+    void SeekNearestLightpolesAndOrbit(HashSet<Transform> skipMoths)
     {
         GameObject[] lights = GameObject.FindGameObjectsWithTag(lightpoleTag);
         float dt = Time.deltaTime;
@@ -284,6 +330,7 @@ public class MothFlockController : MonoBehaviour
         foreach (var m in mothBabies)
         {
             if (m == null) continue;
+            if (skipMoths != null && skipMoths.Contains(m)) continue; // followers are handled by trail
 
             // find nearest lightpole
             Transform nearest = null;
@@ -319,7 +366,7 @@ public class MothFlockController : MonoBehaviour
                 }
                 else
                 {
-                    // rotate around X-axis ¡ú circle in Y¨CZ plane
+                    // rotate around X-axis -> circle in Y¨CZ plane
                     float signedSpeed = orbitAngularSpeed * info.spinDir;
                     m.RotateAround(center, Vector3.right, signedSpeed * dt);
 
@@ -340,7 +387,7 @@ public class MothFlockController : MonoBehaviour
                 }
             }
 
-            // Not orbiting ¡ú approach pole
+            // Not orbiting -> approach pole
             if (dist > orbitEnterRadius)
             {
                 Vector3 toCenter = (center - pos);
@@ -354,7 +401,7 @@ public class MothFlockController : MonoBehaviour
             }
             else
             {
-                // close enough ¡ú initialize orbit once
+                // close enough -> initialize orbit once
                 float r = Mathf.Lerp(orbitMinRadius, orbitMaxRadius, (float)rng.NextDouble());
                 int dir = rng.NextDouble() < 0.5 ? 1 : -1; // CW/CCW variety
 
