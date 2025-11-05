@@ -83,10 +83,21 @@ public class MothFlockController : MonoBehaviour
 
     void Start()
     {
+        mothBabies.Clear();
+        GameObject[] foundBabies = GameObject.FindGameObjectsWithTag("babies");
+        foreach (GameObject b in foundBabies)
+        {
+            mothBabies.Add(b.transform);
+        }
+
+        if (mothBabies.Count == 0)
+            Debug.LogWarning("[MothFlockController] No objects with tag 'babies' found in scene.");
+
         if (player == null)
         {
             Debug.LogError("[MothFlockController] Player is not assigned.");
-            enabled = false; return;
+            enabled = false;
+            return;
         }
 
         if (globalLights) globalLights.SetActive(headlightOn);
