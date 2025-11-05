@@ -377,7 +377,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c903564814bcd6f4d902b37bc19487ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 685831553}
+  player: {fileID: 669825328}
   mothBabies:
   - {fileID: 0}
   - {fileID: 0}
@@ -43613,11 +43613,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a38b2c5706596cc40a4e0de4e53668a2, type: 3}
---- !u!4 &685831553 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 2213865297086429505, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
-  m_PrefabInstance: {fileID: 129845767}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &778993490
 PrefabInstance:
   m_ObjectHideFlags: 0
