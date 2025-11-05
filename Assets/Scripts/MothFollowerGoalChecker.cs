@@ -29,9 +29,11 @@ public class MothFollowerGoalChecker : MonoBehaviour
     private void Start()
     {
         flock = FindAnyObjectByType<MothFlockController>();
+        doorScript = FindAnyObjectByType<EndDoor>();
     }
     void Update()
     {
+        //right now I wrote it to constantly check for amount of moths following the player. This will waste a huge amount of performance. Rewrite later to optimize lol.
         if (flock == null) return;
         if (checkOnce && hasPassed) return;
 
@@ -47,6 +49,14 @@ public class MothFollowerGoalChecker : MonoBehaviour
                 // fire once
                 hasPassed = true;
                 CheckPassed();
+            }
+        } else
+        {
+            if (hasPassed)
+            { 
+                Debug.Log("[MothFollowerGoalChecker] Follower count dropped below requirement.");
+                hasPassed = false;
+                doorScript.EnoughMoths = false;
             }
         }
 

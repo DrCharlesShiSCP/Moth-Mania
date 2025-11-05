@@ -43783,11 +43783,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_UiScaleMode: 0
+  m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 800, y: 600}
-  m_ScreenMatchMode: 0
+  m_ReferenceResolution: {x: 1920, y: 1080}
+  m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
@@ -44075,7 +44075,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6102035479024497523, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6102035479024497523, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Lightmapping
@@ -44083,11 +44083,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8207359072465484078, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8577024921645419421, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8639436469681060781, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
@@ -52336,9 +52336,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   flock: {fileID: 20239082}
   doorScript: {fileID: 1994743847}
-  requiredFollowers: 2
-  checkOnce: 1
-  pollIntervalSeconds: 0
+  requiredFollowers: 5
+  checkOnce: 0
+  pollIntervalSeconds: 2
   onPassed:
     m_PersistentCalls:
       m_Calls:
@@ -53154,7 +53154,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: -304.4939, w: 0}
+  m_margin: {x: 0, y: 0, z: -304.4939, w: -14.288145}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
