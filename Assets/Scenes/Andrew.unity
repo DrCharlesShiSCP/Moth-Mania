@@ -51975,8 +51975,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66c8df3852e660b43add09ec2bf3c80a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flock: {fileID: 0}
-  doorScript: {fileID: 0}
+  flock: {fileID: 20239082}
+  doorScript: {fileID: 1994743847}
   requiredFollowers: 2
   checkOnce: 1
   pollIntervalSeconds: 0
@@ -52022,7 +52022,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 84024a1d682e1124aaba3512a6f2f14e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flock: {fileID: 0}
+  flock: {fileID: 20239082}
   counterText: {fileID: 1819267401}
   displayFormat: '{0}/{1}'
   preferFlockListForTotal: 0
@@ -53407,6 +53407,17 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1939407931}
   m_Mesh: {fileID: 10208, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1994743847 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3361405218285680887, guid: 459fc89ad2f0d3b4e9b45838e3fb4c8a, type: 3}
+  m_PrefabInstance: {fileID: 514662105}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 247e2f41d210f354c864b12de8a739e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2002432987
 GameObject:
   m_ObjectHideFlags: 0
