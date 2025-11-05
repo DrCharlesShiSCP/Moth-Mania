@@ -7574,6 +7574,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 661918431410778052, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: jumpForce
+      value: 7.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 661918431410778052, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: moveSpeed
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1341226719196686004, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 1673993526137226083, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 2213865297086429505, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -7614,9 +7630,33 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2658323954890430902, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 3378701469732367538, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 4453884513781891954, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 5033181843323211262, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 6801461301203901194, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 7001429650051650731, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
       propertyPath: m_Name
       value: GordenCageman (2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 7431196342964896092, guid: 78b8a28c95602dd4a8926badbb0e8d25, type: 3}
+      propertyPath: m_TagString
+      value: Player
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
