@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Lightpole
   - babies
+  - Throwable
   layers:
   - Default
   - TransparentFX
