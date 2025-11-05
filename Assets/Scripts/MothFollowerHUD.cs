@@ -25,8 +25,8 @@ public class MothFollowerHUD : MonoBehaviour
     public string babiesTag = "babies";
 
     [Header("Performance")]
-    [Tooltip("How often (seconds) to refresh the TOTAL count (current followers are still checked every frame).")]
-    public float totalRefreshInterval = 1.0f;
+    [Tooltip("How often (seconds) to refresh the TOTAL count (per frame).")]
+    public float totalRefreshInterval = 10.0f;
 
     // cache for reflection
     FieldInfo recalledField;

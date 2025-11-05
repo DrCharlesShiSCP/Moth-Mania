@@ -29,6 +29,7 @@ public class MothFollowerGoalChecker : MonoBehaviour
     private void Start()
     {
         flock = FindAnyObjectByType<MothFlockController>();
+        doorScript = FindAnyObjectByType<EndDoor>();
     }
     void Update()
     {
@@ -49,10 +50,14 @@ public class MothFollowerGoalChecker : MonoBehaviour
                 hasPassed = true;
                 CheckPassed();
             }
-        }else
+        } else
         {
-            hasPassed = false;
-            doorScript.EnoughMoths = false;
+            if (hasPassed)
+            { 
+                Debug.Log("[MothFollowerGoalChecker] Follower count dropped below requirement.");
+                hasPassed = false;
+                doorScript.EnoughMoths = false;
+            }
         }
 
         if (pollIntervalSeconds > 0f)
