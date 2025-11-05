@@ -32,6 +32,7 @@ public class MothFollowerGoalChecker : MonoBehaviour
     }
     void Update()
     {
+        //right now I wrote it to constantly check for amount of moths following the player. This will waste a huge amount of performance. Rewrite later to optimize lol.
         if (flock == null) return;
         if (checkOnce && hasPassed) return;
 
