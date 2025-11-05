@@ -30,6 +30,11 @@ public class PlayerPickupThrow : MonoBehaviour
     [Tooltip("Inherit player's current Z velocity when throwing.")]
     public bool inheritPlayerZVelocity = true;
 
+    [Header("Funni")]
+    [Tooltip("loud = funny")]
+    public AudioClip metaldrop;
+    public AudioSource sourceOnPlayer;
+
     // runtime
     private Rigidbody heldRB;
     private Collider[] heldColliders;
@@ -166,6 +171,8 @@ public class PlayerPickupThrow : MonoBehaviour
 
         heldRB = null;
         heldColliders = null;
+        sourceOnPlayer.PlayOneShot(metaldrop);
+        Debug.Log("DroppedPipe");
     }
 
     Transform CurrentHoldPoint()

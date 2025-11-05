@@ -44075,7 +44075,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6102035479024497523, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6102035479024497523, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Lightmapping
@@ -44083,11 +44083,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8207359072465484078, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8577024921645419421, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8639436469681060781, guid: c01b42435121b274c85025fcd0649fb4, type: 3}
       propertyPath: m_Enabled
