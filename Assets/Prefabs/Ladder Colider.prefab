@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 328102851600201209}
   - component: {fileID: 3805155702577518281}
   - component: {fileID: 501376432405479919}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Ladder Colider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -139,7 +139,7 @@ GameObject:
   - component: {fileID: 2595908349717373503}
   - component: {fileID: 2296276749218894428}
   - component: {fileID: 1666331615271368960}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -247,7 +247,7 @@ GameObject:
   - component: {fileID: 402921305024412629}
   - component: {fileID: 3924583438440717003}
   - component: {fileID: 3872212031534234914}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -355,7 +355,7 @@ GameObject:
   - component: {fileID: 8596143423739424045}
   - component: {fileID: 6237350375249429334}
   - component: {fileID: 4184582026166184004}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
