@@ -48,6 +48,10 @@ public class MothFollowerGoalChecker : MonoBehaviour
                 hasPassed = true;
                 CheckPassed();
             }
+        }else
+        {
+            hasPassed = false;
+            doorScript.EnoughMoths = false;
         }
 
         if (pollIntervalSeconds > 0f)
