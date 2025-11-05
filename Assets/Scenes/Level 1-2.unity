@@ -55051,6 +55051,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Moth Babies (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 8651065844511799084, guid: 659bb1673fa38214ea5b4629eeb9bb14, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
