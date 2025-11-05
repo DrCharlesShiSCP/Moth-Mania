@@ -9,6 +9,7 @@ public class MothFollowerGoalChecker : MonoBehaviour
 {
     [Header("References")]
     public MothFlockController flock;         // assign in Inspector
+    public EndDoor doorScript;
 
     [Header("Requirement")]
     [Tooltip("Trigger when follower count >= this value.")]
@@ -58,10 +59,10 @@ public class MothFollowerGoalChecker : MonoBehaviour
     /// </summary>
     public void CheckPassed()
     {
-        // 1) UnityEvent (Inspector hookups)
+        // UnityEvent (Inspector hookups)
         onPassed?.Invoke();
-
-        // 3) Or do anything else here (win condition, open door, etc.)
+        doorScript.EnoughMoths = true;
+        //  Or do anything else here (win condition, open door, etc.)
         Debug.Log("[MothFollowerGoalChecker] CheckPassed triggered.");
     }
 
