@@ -13,26 +13,42 @@ public class MothFlockController : MonoBehaviour
     [Header("Headlight Control")]
     public bool controlHeadlightWithKey = true;
     public KeyCode toggleKey = KeyCode.G;
-    public bool headlightOn = false;              // initial state
+    [Tooltip("Initial headlight state at start.")]
+    public bool headlightOn = false;
 
     [Header("Headlight UI (optional)")]
     public TMP_Text headlightStatusText;
     public string onText = "ON";
     public string offText = "OFF";
 
-    [Header("Recall Rule")]
-    [Tooltip("Player must be within this range of the nearest Lightpole to LATCH recall when headlight turns OFF.")]
+    [Header("Recall Rule (sticky while OFF)")]
+    [Tooltip("When headlight turns OFF, if the player is within this range of the nearest Lightpole, recall latches and babies keep following even after leaving that range. Turning ON clears the latch.")]
     public float playerLightReturnRange = 6f;
 
     [Header("Follow Line Settings")]
+    [Tooltip("Distance (meters) between babies in the line.")]
     public float followGapDistance = 0.6f;
+    [Tooltip("How tightly babies snap to their trail points.")]
     public float followLerp = 10f;
 
     [Header("Seek Light Settings")]
+    [Tooltip("Approach speed toward poles.")]
     public float seekSpeed = 8f;
-    public float arriveRadius = 0.3f;
+    [Tooltip("Radius at which a moth is considered to have 'reached' the pole and starts orbiting.")]
+    public float orbitEnterRadius = 0.35f;
+
+    [Header("Orbit Settings (RotateAround)")]
+    [Tooltip("Min orbit radius around the lightpole (meters).")]
+    public float orbitMinRadius = 0.6f;
+    [Tooltip("Max orbit radius around the lightpole (meters).")]
+    public float orbitMaxRadius = 1.2f;
+    [Tooltip("Angular speed in degrees per second.")]
+    public float orbitAngularSpeed = 90f;
+    [Tooltip("If distance from pole exceeds this, break orbit (hysteresis). Should be > orbitEnterRadius.")]
+    public float orbitBreakRadius = 0.6f;
 
     [Header("World Constraints")]
+    [Tooltip("Lock moth X to player's X for 2.5D side-scroller.")]
     public bool lockXToPlayer = true;
 
     [Header("Lookup")]
@@ -41,23 +57,41 @@ public class MothFlockController : MonoBehaviour
     [Header("Debug (read-only)")]
     public FlockState state;
 
-    // --- internals ---
+    [Header("Headlight Object")]
+    public GameObject nightVisionVolume;
+    public GameObject headlampitselfRed;
+    public GameObject globalLights;
+
+    // ---------------- internals ----------------
     readonly List<Vector3> trail = new List<Vector3>();
     float gapMetersAccum;
     Vector3 lastTrailPos;
     float computedTrailLength;
 
-    bool recallLatched = false;        // <-- stays true while headlight is OFF, once latched
+    bool recallLatched = false; // stays true while headlight is OFF once latched
     bool prevHeadlightOn;
+
+    class OrbitInfo
+    {
+        public Transform center;  // lightpole
+        public float radius;      // fixed orbit radius
+        public int spinDir;       // +1 or -1 for CW/CCW variety
+    }
+    readonly Dictionary<Transform, OrbitInfo> orbiting = new Dictionary<Transform, OrbitInfo>();
+    System.Random rng;
 
     void Start()
     {
+        globalLights.SetActive(headlightOn);
+        //headlampitselfRed.SetActive(headlightOn);
+        nightVisionVolume.SetActive(headlightOn);
         if (player == null)
         {
             Debug.LogError("[MothFlockController] Player is not assigned.");
             enabled = false; return;
         }
 
+        rng = new System.Random(gameObject.GetInstanceID());
         prevHeadlightOn = headlightOn;
         UpdateHeadlightUI();
 
@@ -70,43 +104,43 @@ public class MothFlockController : MonoBehaviour
 
     void Update()
     {
-        // Toggle headlight with G
+        // Toggle headlight with G (if enabled)
         if (controlHeadlightWithKey && Input.GetKeyDown(toggleKey))
         {
             headlightOn = !headlightOn;
             UpdateHeadlightUI();
+            headlampitselfRed.SetActive(!headlightOn);
         }
 
-        // Detect ON/OFF transitions to manage the latch
+        // Manage sticky recall latch on transitions
         if (headlightOn && !prevHeadlightOn)
         {
-            // just turned ON ¡ú clear latch
+            // Just turned ON ¡ú clear latch and orbits (they'll re-acquire poles)
             recallLatched = false;
         }
         else if (!headlightOn && prevHeadlightOn)
         {
-            // just turned OFF ¡ú latch if within proximity NOW
+            // Just turned OFF ¡ú latch if within proximity NOW
             Transform nearest = FindNearestLightTo(player.position, out float dNow);
             if (nearest != null && dNow <= playerLightReturnRange)
                 recallLatched = true;
-            // else remain as-is (could already be latched from earlier)
         }
         prevHeadlightOn = headlightOn;
 
-        // Decide behavior:
-        // ON ¡ú always SeekLight
-        // OFF ¡ú FollowLine if latched, otherwise SeekLight
+        // Decide behavior
         if (headlightOn)
         {
             if (state != FlockState.SeekLight) state = FlockState.SeekLight;
-            SeekNearestLightpoles();
+            SeekNearestLightpolesAndOrbit();
         }
         else if (recallLatched)
         {
+            // Recall follow mode while OFF (sticky)
             if (state != FlockState.FollowLine)
             {
                 state = FlockState.FollowLine;
-                RebuildTrail(); // snap formation when switching back
+                orbiting.Clear();   // stop orbiting on recall
+                RebuildTrail();     // snap formation
             }
             UpdateTrailFromPlayer();
             PlaceMothsAlongTrail();
@@ -114,18 +148,24 @@ public class MothFlockController : MonoBehaviour
         else
         {
             if (state != FlockState.SeekLight) state = FlockState.SeekLight;
-            SeekNearestLightpoles();
+            SeekNearestLightpolesAndOrbit();
         }
     }
 
-    // ---------- UI ----------
+    // ---------------- UI ----------------
     void UpdateHeadlightUI()
     {
         if (headlightStatusText != null)
             headlightStatusText.text = headlightOn ? onText : offText;
+
+        if (nightVisionVolume != null)
+            nightVisionVolume.SetActive(headlightOn); // night vision ON when lamp OFF
+        if (globalLights != null)
+            globalLights.SetActive(headlightOn); // global lights ON when lamp ON
+
     }
 
-    // ---------- Light search ----------
+    // ---------------- Light search ----------------
     Transform FindNearestLightTo(Vector3 pos, out float distance)
     {
         distance = float.PositiveInfinity;
@@ -141,7 +181,7 @@ public class MothFlockController : MonoBehaviour
         return best;
     }
 
-    // ---------- FOLLOW LINE ----------
+    // ---------------- FOLLOW LINE ----------------
     void UpdateTrailFromPlayer()
     {
         Vector3 p = player.position;
@@ -176,7 +216,8 @@ public class MothFlockController : MonoBehaviour
         }
 
         int neededPoints = Mathf.CeilToInt(computedTrailLength / 0.05f) + 5;
-        while (trail.Count > neededPoints) trail.RemoveAt(0);
+        while (trail.Count > neededPoints)
+            trail.RemoveAt(0);
     }
 
     void PlaceMothsAlongTrail()
@@ -195,9 +236,10 @@ public class MothFlockController : MonoBehaviour
 
             m.position = Vector3.Lerp(m.position, target, followLerp * Time.deltaTime);
 
+            // face along Z (optional)
             Vector3 vel = target - m.position; vel.y = 0f;
             if (vel.sqrMagnitude > 0.0001f)
-                m.forward = Vector3.Lerp(m.forward, new Vector3(0, 0, Mathf.Sign(vel.z)), 12f * Time.deltaTime);
+                m.forward = Vector3.Lerp(m.forward, new Vector3(0, 0, Mathf.Sign(vel.z == 0 ? 1f : vel.z)), 12f * Time.deltaTime);
         }
     }
 
@@ -233,15 +275,17 @@ public class MothFlockController : MonoBehaviour
             trail.Add(p + dir * (i * segmentLen));
     }
 
-    // ---------- SEEK LIGHT ----------
-    void SeekNearestLightpoles()
+    // ---------------- SEEK LIGHT + ORBIT (RotateAround) ----------------
+    void SeekNearestLightpolesAndOrbit()
     {
         GameObject[] lights = GameObject.FindGameObjectsWithTag(lightpoleTag);
+        float dt = Time.deltaTime;
 
         foreach (var m in mothBabies)
         {
             if (m == null) continue;
 
+            // find nearest lightpole
             Transform nearest = null;
             float bestSqr = float.MaxValue;
             Vector3 pos = m.position;
@@ -249,28 +293,79 @@ public class MothFlockController : MonoBehaviour
             for (int i = 0; i < lights.Length; i++)
             {
                 Vector3 lp = lights[i].transform.position;
-                if (lockXToPlayer) lp.x = player.position.x;
+                if (lockXToPlayer) lp.x = player.position.x; // keep lane
                 float d2 = (lp - pos).sqrMagnitude;
                 if (d2 < bestSqr) { bestSqr = d2; nearest = lights[i].transform; }
             }
-
             if (nearest == null) continue;
 
-            Vector3 target = nearest.position;
-            if (lockXToPlayer) target.x = player.position.x;
+            // compute orbit center (snap X to player lane if desired)
+            Vector3 center = nearest.position;
+            if (lockXToPlayer) center.x = player.position.x;
 
-            Vector3 delta = target - pos;
-            float dist = delta.magnitude;
+            float dist = Vector3.Distance(pos, center);
 
-            if (dist > arriveRadius)
+            // If already orbiting this pole, rotate; otherwise approach until close enough
+            OrbitInfo info;
+            bool isOrbiting = orbiting.TryGetValue(m, out info) && info.center == nearest;
+
+            if (isOrbiting)
             {
-                Vector3 step = delta.normalized * seekSpeed * Time.deltaTime;
-                if (step.magnitude > dist) step = delta;
+                // break orbit if we drift too far (prevents threshold jitter)
+                if (dist > orbitBreakRadius)
+                {
+                    orbiting.Remove(m);
+                    // fall through to approach behavior
+                }
+                else
+                {
+                    // rotate around X-axis ¡ú circle in Y¨CZ plane
+                    float signedSpeed = orbitAngularSpeed * info.spinDir;
+                    m.RotateAround(center, Vector3.right, signedSpeed * dt);
+
+                    // enforce X lane (safety)
+                    if (lockXToPlayer)
+                    {
+                        Vector3 p = m.position;
+                        p.x = center.x;
+                        m.position = p;
+                    }
+
+                    // face along tangent (¡ÀZ)
+                    Vector3 tangent = Vector3.Cross(Vector3.right, (m.position - center)).normalized; // tangent in YZ
+                    if (tangent.sqrMagnitude > 1e-4f)
+                        m.forward = Vector3.Lerp(m.forward, new Vector3(0f, 0f, Mathf.Sign(tangent.z == 0 ? 1f : tangent.z)), 10f * dt);
+
+                    continue; // done
+                }
+            }
+
+            // Not orbiting ¡ú approach pole
+            if (dist > orbitEnterRadius)
+            {
+                Vector3 toCenter = (center - pos);
+                Vector3 step = toCenter.normalized * seekSpeed * dt;
+                if (step.magnitude > toCenter.magnitude) step = toCenter; // no overshoot
                 m.position += step;
 
-                Vector3 fwd = step; fwd.y = 0;
-                if (fwd.sqrMagnitude > 0.0001f)
-                    m.forward = Vector3.Lerp(m.forward, new Vector3(0, 0, Mathf.Sign(fwd.z)), 10f * Time.deltaTime);
+                Vector3 fwd = step; fwd.y = 0f;
+                if (fwd.sqrMagnitude > 1e-4f)
+                    m.forward = Vector3.Lerp(m.forward, new Vector3(0, 0, Mathf.Sign(fwd.z == 0 ? 1f : fwd.z)), 10f * dt);
+            }
+            else
+            {
+                // close enough ¡ú initialize orbit once
+                float r = Mathf.Lerp(orbitMinRadius, orbitMaxRadius, (float)rng.NextDouble());
+                int dir = rng.NextDouble() < 0.5 ? 1 : -1; // CW/CCW variety
+
+                // place moth exactly on its orbit ring at a random phase
+                float angle = (float)rng.NextDouble() * Mathf.PI * 2f;
+                float oy = Mathf.Sin(angle) * r;
+                float oz = Mathf.Cos(angle) * r;
+                m.position = new Vector3(center.x, center.y + oy, center.z + oz);
+
+                // remember orbit params
+                orbiting[m] = new OrbitInfo { center = nearest, radius = r, spinDir = dir };
             }
         }
     }

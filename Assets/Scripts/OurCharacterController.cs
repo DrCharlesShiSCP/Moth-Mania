@@ -1,7 +1,7 @@
 using UnityEngine;
 
 
-public class CharacterController : MonoBehaviour
+public class OurCharacterController : MonoBehaviour
 {
     [Header("Movement Adjust")]
     public float moveSpeed = 7.5f;

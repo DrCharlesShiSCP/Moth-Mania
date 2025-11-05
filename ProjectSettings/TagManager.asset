@@ -9,12 +9,12 @@ TagManager:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - PlayerEntity
   - Water
   - UI
   - groundMask
   - wallMask
-  - 
+  - PostFX
   - 
   - 
   - 
