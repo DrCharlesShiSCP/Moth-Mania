@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 3721530353856059497}
   - component: {fileID: 3072813729297257112}
   - component: {fileID: 8920022034073455395}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: ThrowTest
   m_TagString: Throwable
   m_Icon: {fileID: 0}
@@ -219,10 +219,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: WoodBox
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 3cc749af23449234ab84f15a089c3099, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     - target: {fileID: 6136484094115940917, guid: 3cc749af23449234ab84f15a089c3099, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5e512cccc74a97b4a9f6490bccfe1e5a, type: 2}
+    - target: {fileID: 7036213049465896255, guid: 3cc749af23449234ab84f15a089c3099, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7159096192925184644, guid: 3cc749af23449234ab84f15a089c3099, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 9091025270794422884, guid: 3cc749af23449234ab84f15a089c3099, type: 3}
+      propertyPath: m_Layer
+      value: 6
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
