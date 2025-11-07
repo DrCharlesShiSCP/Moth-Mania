@@ -259,7 +259,7 @@ public class OurCharacterController : MonoBehaviour
 
     void StopSlide()
     {
-        // only stop slide if we have room to stand up OR we¡¯re not under a low ceiling
+        // only stop slide if we have room to stand up OR weÂ¡Â¯re not under a low ceiling
         if (CanStandUpCheckBlocked()) return;
 
         isSliding = false;

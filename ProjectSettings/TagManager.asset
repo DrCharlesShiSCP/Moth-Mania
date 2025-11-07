@@ -17,8 +17,8 @@ TagManager:
   - groundMask
   - wallMask
   - PostFX
-  - 
-  - 
+  - Throwable
+  - Enemy
   - 
   - 
   - 

@@ -1,4 +1,6 @@
+using Unity.AI.Navigation; // package: com.unity.ai.navigation
 using UnityEngine;
+using UnityEngine.Serialization; // for FormerlySerializedAs
 using UnityEngine.Tilemaps;
 
 [ExecuteAlways]
@@ -6,6 +8,7 @@ public class TilemapGenerator : MonoBehaviour
 {
     [Header("Tilemap Settings")]
     public Tilemap tilemap;
+
 
     [Header("Visualization")]
     public bool showSolidBlocks = true;
@@ -15,13 +18,31 @@ public class TilemapGenerator : MonoBehaviour
     public Vector3 blockScale = Vector3.one;
 
     [Header("Collision Prefab (Optional)")]
+    [Tooltip("Prefab to instantiate per occupied tile (e.g., a cube with a collider, set to a 'Ground' layer).")]
     public GameObject collisionPrefab;
+
+    [Header("NavMesh")]
+    [Tooltip("Create/find a NavMeshSurface here to bake walkable areas from generated tiles.")]
+    public NavMeshSurface navSurface;
+
+    [Tooltip("Which layers count as ground when baking the NavMesh.")]
+    [FormerlySerializedAs("walkableLayers")]
+    public LayerMask groundMask = ~0;
+
+    [Tooltip("Collect only children of this GameObject (recommended if you parent tiles under this).")]
+    public bool collectChildrenOnly = true;
+
+    [Tooltip("Rebuild the NavMesh right after generating collisions (Play Mode).")]
+    public bool rebuildNavMeshOnGenerate = true;
 
     private static Mesh cubeMesh;
     private static Material solidMaterial;
     private static Material lineMaterial;
 
-    private void OnEnable()
+    // Where we parent instantiated collision tiles so it stays tidy
+    private Transform _collidersRoot;
+
+    void OnEnable()
     {
         if (cubeMesh == null)
             cubeMesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
@@ -41,42 +62,125 @@ public class TilemapGenerator : MonoBehaviour
             lineMaterial.SetInt("_ZWrite", 1);
             lineMaterial.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.LessEqual);
         }
+
+        EnsureRootsAndSurface();
     }
 
-    private void Start()
+    // Optional: auto-default groundMask to the "Ground" layer if mask is 0
+    void OnValidate()
+    {
+        if (groundMask == 0)
+        {
+            int idx = LayerMask.NameToLayer("Ground");
+            if (idx >= 0) groundMask = 1 << idx;
+        }
+    }
+
+    void Start()
     {
         if (Application.isPlaying)
+        {
             GenerateCollisions();
+        }
     }
 
-    void GenerateCollisions()
+    void EnsureRootsAndSurface()
+    {
+        // Create/find a tidy parent for generated collision tiles
+        var rootName = "CollidersRoot";
+        var child = transform.Find(rootName);
+        if (!child)
+        {
+            var go = new GameObject(rootName);
+            go.transform.SetParent(transform, false);
+            _collidersRoot = go.transform;
+        }
+        else _collidersRoot = child;
+
+        // Ensure we have a NavMeshSurface somewhere sensible (default: this GO)
+        if (navSurface == null)
+            navSurface = GetComponent<NavMeshSurface>();
+        if (navSurface == null)
+            navSurface = gameObject.AddComponent<NavMeshSurface>();
+
+        navSurface.layerMask = groundMask;
+        navSurface.collectObjects = collectChildrenOnly ? CollectObjects.Children : CollectObjects.All;
+       
+
+        // Optional tuning:
+        // navSurface.overrideVoxelSize = true; navSurface.voxelSize = 0.066f;
+        // navSurface.overrideTileSize  = true; navSurface.tileSize  = 64;
+    }
+
+    [ContextMenu("Generate Collisions (Editor)")]
+    public void GenerateCollisions()
     {
         if (tilemap == null)
         {
             Debug.LogError("Tilemap not assigned!");
             return;
         }
-
         if (collisionPrefab == null)
         {
             Debug.LogError("Collision prefab not assigned!");
             return;
         }
 
+        EnsureRootsAndSurface();
+
+        // Clear previous generated children (Editor convenience)
+        if (Application.isPlaying == false)
+        {
+            for (int i = _collidersRoot.childCount - 1; i >= 0; i--)
+            {
+                var c = _collidersRoot.GetChild(i);
+#if UNITY_EDITOR
+                if (!Application.isPlaying) UnityEditor.Undo.DestroyObjectImmediate(c.gameObject);
+                else Destroy(c.gameObject);
+#else
+                DestroyImmediate(c.gameObject);
+#endif
+            }
+        }
+
         BoundsInt bounds = tilemap.cellBounds;
+        int count = 0;
+
         for (int x = bounds.xMin; x < bounds.xMax; x++)
         {
             for (int y = bounds.yMin; y < bounds.yMax; y++)
             {
-                if (tilemap.GetTile(new Vector3Int(x, y, 0)) != null)
-                {
-                    Vector3 worldPos = tilemap.GetCellCenterWorld(new Vector3Int(x, y, 0));
-                    Instantiate(collisionPrefab, worldPos, Quaternion.identity);
-                }
+                Vector3Int cell = new Vector3Int(x, y, 0);
+                if (tilemap.GetTile(cell) == null) continue;
+
+                Vector3 worldPos = tilemap.GetCellCenterWorld(cell);
+                var go = Instantiate(collisionPrefab, worldPos, Quaternion.identity, _collidersRoot);
+
+                // (Optional) force the spawned tile to be on a specific layer contained in groundMask
+                // Example: if your "Ground" layer exists, set it:
+                // int groundLayer = LayerMask.NameToLayer("Ground");
+                // if (groundLayer >= 0) go.layer = groundLayer;
+
+                count++;
             }
         }
 
-        Debug.Log("Tilemap collision generation complete.");
+        Debug.Log($"Tilemap collision generation complete. Spawned {count} tiles.");
+
+        if (Application.isPlaying && rebuildNavMeshOnGenerate)
+        {
+            RebuildNavMeshNow();
+        }
+    }
+
+    [ContextMenu("Rebuild NavMesh Now")]
+    public void RebuildNavMeshNow()
+    {
+        EnsureRootsAndSurface();
+        navSurface.layerMask = groundMask;
+        navSurface.collectObjects = collectChildrenOnly ? CollectObjects.Children : CollectObjects.All;
+        navSurface.BuildNavMesh();
+        Debug.Log("[TilemapGenerator] NavMesh rebuilt.");
     }
 
     private void OnDrawGizmos()
@@ -119,77 +223,11 @@ public class TilemapGenerator : MonoBehaviour
                 Vector3Int pos = new Vector3Int(x, y, 0);
                 if (tilemap.GetTile(pos) == null) continue;
 
-                bool hasLeft = tilemap.GetTile(pos + Vector3Int.left) != null;
-                bool hasRight = tilemap.GetTile(pos + Vector3Int.right) != null;
-                bool hasUp = tilemap.GetTile(pos + Vector3Int.up) != null;
-                bool hasDown = tilemap.GetTile(pos + Vector3Int.down) != null;
-
-                Vector3 worldPos = tilemap.GetCellCenterWorld(pos);
-                //DrawExposedEdges(worldPos, blockScale, hasLeft, hasRight, hasUp, hasDown);
+                // (Wireframe drawing omitted for brevity)
             }
         }
 
         GL.End();
         GL.PopMatrix();
     }
-
-    /// <summary>
-    /// Draw only cube edges that are exposed (no neighboring tile).
-    /// </summary>
-    /*private void DrawExposedEdges(Vector3 center, Vector3 size, bool hasLeft, bool hasRight, bool hasUp, bool hasDown)
-    {
-        Vector3 h = size * 0.5f;
-
-        // Cube vertices
-        Vector3[] v =
-        {
-            center + new Vector3(-h.x, -h.y, -h.z),
-            center + new Vector3( h.x, -h.y, -h.z),
-            center + new Vector3( h.x,  h.y, -h.z),
-            center + new Vector3(-h.x,  h.y, -h.z),
-            center + new Vector3(-h.x, -h.y,  h.z),
-            center + new Vector3( h.x, -h.y,  h.z),
-            center + new Vector3( h.x,  h.y,  h.z),
-            center + new Vector3(-h.x,  h.y,  h.z)
-        };
-
-*//*        // Draw only outer edges
-        if (!hasDown)
-        {
-            DrawEdge(v[0], v[1]);
-            DrawEdge(v[1], v[5]);
-            DrawEdge(v[5], v[4]);
-            DrawEdge(v[4], v[0]);
-        }
-
-        if (!hasUp)
-        {
-            DrawEdge(v[3], v[2]);
-            DrawEdge(v[2], v[6]);
-            DrawEdge(v[6], v[7]);
-            DrawEdge(v[7], v[3]);
-        }
-
-        if (!hasLeft)
-        {
-            DrawEdge(v[0], v[3]);
-            DrawEdge(v[3], v[7]);
-            DrawEdge(v[7], v[4]);
-            DrawEdge(v[4], v[0]);
-        }
-
-        if (!hasRight)
-        {
-            DrawEdge(v[1], v[2]);
-            DrawEdge(v[2], v[6]);
-            DrawEdge(v[6], v[5]);
-            DrawEdge(v[5], v[1]);
-        }*//*
-    }
-
-    private void DrawEdge(Vector3 a, Vector3 b)
-    {
-        GL.Vertex(a);
-        GL.Vertex(b);
-    }*/
 }
