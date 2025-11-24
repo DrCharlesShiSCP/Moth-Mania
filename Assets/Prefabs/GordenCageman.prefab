@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 8907614655980994464}
   m_Layer: 3
   m_Name: PlayerHighlighter
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -135,7 +135,7 @@ GameObject:
   - component: {fileID: 6062970523947827710}
   m_Layer: 3
   m_Name: headlamp
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -247,9 +247,11 @@ GameObject:
   - component: {fileID: 6302831618480465218}
   - component: {fileID: 2792781871184626488}
   - component: {fileID: 7179671045617709603}
+  - component: {fileID: 6393185800571818617}
+  - component: {fileID: 1245127108802183214}
   m_Layer: 3
   m_Name: GordenCagepole
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -362,12 +364,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c0fa75b3a4941e43b04d4b907b57eac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 20
+  moveSpeed: 10
   airControlTimes: 0.6
   acceleration: 200
   deceleration: 200
   maxFallSpeed: -60
-  jumpForce: 12
+  jumpForce: 7.5
   coyoteTime: 0.12
   jumpBufferTime: 0.12
   wallCheckDistance: 0.55
@@ -449,7 +451,7 @@ MonoBehaviour:
   zThrowSpeed: 12
   upwardThrowImpulse: 4
   inheritPlayerZVelocity: 1
-  metaldrop: {fileID: 8300000, guid: 10f78a24b3fbff94dae594cb81a6d751, type: 3}
+  metaldrop: {fileID: 0}
   sourceOnPlayer: {fileID: 7179671045617709603}
 --- !u!82 &7179671045617709603
 AudioSource:
@@ -548,6 +550,89 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &6393185800571818617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2658323954890430902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d1fc4988731c09408c3928e877f1a67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxLives: 3
+  currentLives: 3
+  iFrames: 0.75
+  enemyLayers:
+    serializedVersion: 2
+    m_Bits: 1024
+  enemyTag: Enemy
+  onLifeLost:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: HeartsUI, Assembly-CSharp
+        m_MethodName: RefreshAll
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onDeath:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1245127108802183214}
+        m_TargetAssemblyTypeName: PlayerDeathHandler, Assembly-CSharp
+        m_MethodName: OnPlayerDeath
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  onLivesRefreshed:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 0}
+        m_TargetAssemblyTypeName: HeartsUI, Assembly-CSharp
+        m_MethodName: RefreshAll
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1245127108802183214
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2658323954890430902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1fb5fd918f36d64489f73a2367fa5c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameOverPanel: {fileID: 0}
+  pauseWhilePanelOpen: 1
+  waitForConfirm: 1
+  restartKey: 114
+  fade: {fileID: 0}
+  fadeDuration: 0.5
+  reloadDelay: 2
 --- !u!1 &3378701469732367538
 GameObject:
   m_ObjectHideFlags: 0
@@ -561,7 +646,7 @@ GameObject:
   - component: {fileID: 7861680495199014691}
   m_Layer: 3
   m_Name: Point Light
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -683,7 +768,7 @@ GameObject:
   - component: {fileID: 1573440080623768965}
   m_Layer: 3
   m_Name: Throw Hold Pos Back
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -791,7 +876,7 @@ GameObject:
   - component: {fileID: 7295798085552483503}
   m_Layer: 3
   m_Name: Main Camera
-  m_TagString: MainCamera
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -928,7 +1013,7 @@ GameObject:
   - component: {fileID: 640126190503530424}
   m_Layer: 3
   m_Name: Throw Hold Pos Front
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1065,7 +1150,7 @@ GameObject:
   - component: {fileID: 3479881659607972944}
   m_Layer: 3
   m_Name: GroundCheck
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

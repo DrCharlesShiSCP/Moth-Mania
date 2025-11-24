@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 3721530353856059497}
   - component: {fileID: 3072813729297257112}
   - component: {fileID: 8920022034073455395}
+  - component: {fileID: 7621665396061719041}
   m_Layer: 6
   m_Name: ThrowTest
   m_TagString: Throwable
@@ -151,6 +152,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grid: {fileID: 0}
+--- !u!208 &7621665396061719041
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2709750191654709006}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.5, y: 0.5, z: 0.75}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0, z: 0}
+  m_TimeToStationary: 0.5
 --- !u!1001 &4009108781346195188
 PrefabInstance:
   m_ObjectHideFlags: 0
