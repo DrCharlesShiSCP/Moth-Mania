@@ -10,7 +10,7 @@ public class PlayerLives : MonoBehaviour
     public int currentLives;
 
     [Header("Damage")]
-    [Tooltip("Seconds of invulnerability after getting hit.")]
+    [Tooltip("Seconds of invulnerability after getting hit (when using iFrame-respecting damage).")]
     public float iFrames = 0.75f;
     public LayerMask enemyLayers; // optional if you want layer-based hits
     public string enemyTag = "Enemy"; // optional if you want tag-based hits
@@ -28,31 +28,85 @@ public class PlayerLives : MonoBehaviour
         onLivesRefreshed?.Invoke();
     }
 
+    /// <summary>
+    /// Old API: lose exactly 1 life and respect iFrames.
+    /// </summary>
     public void LoseOneLife()
     {
-        if (Time.time < _canBeHitAfter) return;
-        _canBeHitAfter = Time.time + iFrames;
+        ApplyDamage(1, respectIFrames: true);
+    }
 
-        currentLives = Mathf.Max(0, currentLives - 1);
-        onLifeLost?.Invoke();
-
-        if (currentLives <= 0)
-            onDeath?.Invoke();
-
-        Debug.Log($"[PlayerLives] HIT at {Time.time:F2}. Lives before: {currentLives}");
-
+    /// <summary>
+    /// Lose multiple lives, respecting iFrames (like a cluster of hits).
+    /// </summary>
+    /// 
+    public void LoseLivesIgnoringIFrames(int amount)
+    {
+        ApplyDamage(amount, respectIFrames: false);
     }
 
 
 
-    void OnCollisionEnter(Collision c)
+    public void LoseLives(int amount)
+    {
+        ApplyDamage(amount, respectIFrames: true);
+    }
+
+    /// <summary>
+    /// Lose multiple lives in a single hit, IGNORING existing iFrames.
+    /// Good for big traps like the hydraulic press.
+    /// </summary>
+
+
+    /// <summary>
+    /// Shared damage logic.
+    /// </summary>
+    /// 
+    public void ApplyDamage(int amount, bool respectIFrames = true)
+    {
+        if (amount <= 0) return;
+
+        // Respect iFrames if requested
+        if (respectIFrames && Time.time < _canBeHitAfter)
+            return;
+
+        // Set new iFrame window
+        _canBeHitAfter = Time.time + iFrames;
+
+        int oldLives = currentLives;
+
+        currentLives = Mathf.Max(0, currentLives - amount);
+
+        if (currentLives != oldLives)
+            onLifeLost?.Invoke();
+
+        if (oldLives > 0 && currentLives <= 0)
+            onDeath?.Invoke();
+
+        Debug.Log($"[PlayerLives] DAMAGE {amount} (respectIFrames={respectIFrames}). {oldLives} -> {currentLives}");
+    }
+
+   
+    private void OnCollisionEnter(Collision c)
     {
         if (!enabled) return;
 
-        bool layerMatch = (enemyLayers.value & (1 << c.collider.gameObject.layer)) != 0;
-        if (layerMatch) LoseOneLife();
-    }
+        // 1) SPECIAL CASE: Hydraulic press hits = big damage
+        var press = c.collider.GetComponentInParent<HydraulicPressTrap>();
+        if (press != null)
+        {
+            // Take 3 lives in one go, ignoring iFrames
+            LoseLivesIgnoringIFrames(3);
+            return;
+        }
 
+        // 2) NORMAL ENEMY COLLISION: 1 life, respects iFrames
+        bool layerMatch = (enemyLayers.value & (1 << c.collider.gameObject.layer)) != 0;
+        if (layerMatch)
+        {
+            LoseOneLife();
+        }
+    }
 
 
     // Helper if you want to reset all lives on respawn
@@ -65,6 +119,7 @@ public class PlayerLives : MonoBehaviour
 
 // tiny attribute to gray-out currentLives in inspector
 public class ReadOnlyInInspectorAttribute : PropertyAttribute { }
+
 #if UNITY_EDITOR
 [CustomPropertyDrawer(typeof(ReadOnlyInInspectorAttribute))]
 public class ReadOnlyInInspectorDrawer : PropertyDrawer
