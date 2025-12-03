@@ -86,27 +86,28 @@ public class PlayerLives : MonoBehaviour
         Debug.Log($"[PlayerLives] DAMAGE {amount} (respectIFrames={respectIFrames}). {oldLives} -> {currentLives}");
     }
 
-   
+
     private void OnCollisionEnter(Collision c)
     {
         if (!enabled) return;
 
-        // 1) SPECIAL CASE: Hydraulic press hits = big damage
-        var press = c.collider.GetComponentInParent<HydraulicPressTrap>();
-        if (press != null)
+        // 1) SPECIAL CASE: Press kill zone only
+        PressKillZone killZone = c.collider.GetComponent<PressKillZone>();
+        if (killZone != null)
         {
-            // Take 3 lives in one go, ignoring iFrames
-            LoseLivesIgnoringIFrames(3);
+            // Apply multi-life damage, ignoring iFrames
+            LoseLivesIgnoringIFrames(killZone.damage);
             return;
         }
 
-        // 2) NORMAL ENEMY COLLISION: 1 life, respects iFrames
+        // 2) NORMAL ENEMY COLLISION
         bool layerMatch = (enemyLayers.value & (1 << c.collider.gameObject.layer)) != 0;
         if (layerMatch)
         {
             LoseOneLife();
         }
     }
+
 
 
     // Helper if you want to reset all lives on respawn

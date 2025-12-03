@@ -37,8 +37,6 @@ public class HydraulicPressTrap : MonoBehaviour
     [Tooltip("Tag used to identify the player.")]
     public string playerTag = "Player";
 
-    [Tooltip("How much damage to deal to the player on contact.")]
-    public int damageAmount = 999;
 
     [Tooltip("Optional: should we only kill if it's in the fast slam phase?")]
     public bool onlyKillWhileExtending = true;
@@ -125,15 +123,7 @@ public class HydraulicPressTrap : MonoBehaviour
     /// and also a small helper on the head that forwards collisions,
     /// OR just move this whole script onto PressHead and wire references.
     /// </summary>
-    private void OnTriggerEnter(Collider other)
-    {
-        // Find PlayerLives on what we hit or its parent
-        PlayerLives lives = other.GetComponentInParent<PlayerLives>();
-        if (lives == null) return;
-
-        // Deal 3 lives of damage in ONE go, ignoring iFrames
-        lives.LoseLivesIgnoringIFrames(3);
-    }
+   
 
 
 
