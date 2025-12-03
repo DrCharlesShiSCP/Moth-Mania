@@ -385,10 +385,12 @@ MonoBehaviour:
   controlHeadlightWithKey: 1
   toggleKey: 103
   headlightOn: 0
+  canToggleHeadlight: 1
   headlightStatusText: {fileID: 84998274}
   onText: ON
   offText: OFF
   playerLightReturnRange: 5
+  directPickupRadius: 3.5
   followGapDistance: 0.6
   followLerp: 10
   seekSpeed: 8
@@ -398,6 +400,11 @@ MonoBehaviour:
   orbitAngularSpeed: 30
   orbitBreakRadius: 1.3
   lockXToPlayer: 0
+  blockWallsInsideRoamBox: 1
+  wallLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  roamBoxTag: MothRoamBox
   lightpoleTag: Lightpole
   state: 0
   nightVisionVolume: {fileID: 1203069167}
@@ -7100,63 +7107,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 810085444}
   m_CullTransparentMesh: 1
---- !u!1001 &813870145
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 4056069553956308037, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_Name
-      value: Squonk (2)
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -0.15
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 28.11
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -8.04
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8865147122775171751, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 5469ffb820c9a1a449146c838829ac61, type: 3}
 --- !u!1001 &818774974
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -79879,7 +79829,6 @@ SceneRoots:
   - {fileID: 1130439914}
   - {fileID: 543784649}
   - {fileID: 1894082683}
-  - {fileID: 813870145}
   - {fileID: 1252353273}
   - {fileID: 1775416121}
   - {fileID: 751668575}
