@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: 3072813729297257112}
   - component: {fileID: 8920022034073455395}
   - component: {fileID: 7621665396061719041}
-  m_Layer: 9
+  m_Layer: 6
   m_Name: ThrowTest
   m_TagString: Throwable
   m_Icon: {fileID: 0}

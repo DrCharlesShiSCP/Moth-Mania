@@ -3,15 +3,17 @@ using UnityEngine;
 
 public class PressurePlateTrigger : MonoBehaviour
 {
-    [Header("Door")]
-    public DoorRotator door;
+    [Header("Doors (optional)")]
+    public DoorRotator[] doors;
+
+    [Header("Barriers (objects to hide)")]
+    public GameObject[] barriers;
 
     [Header("Activation Settings")]
     public string playerTag = "Player";
     public bool useMassCheck = true;
-    public float minimumMass = 1f;  // how heavy an object must be to trigger
+    public float minimumMass = 1f;
 
-    // Track everything currently on the plate
     private readonly HashSet<Collider> _thingsOnPlate = new HashSet<Collider>();
 
     private void OnTriggerEnter(Collider other)
@@ -33,34 +35,49 @@ public class PressurePlateTrigger : MonoBehaviour
 
     private bool IsValidActivator(Collider other)
     {
-        // 1) Player always allowed if tagged
         if (other.CompareTag(playerTag))
             return true;
 
-        // 2) Objects: must have a Rigidbody
         Rigidbody rb = other.attachedRigidbody;
         if (rb == null) return false;
 
-        // 3) Optional mass check
         if (useMassCheck)
-        {
             return rb.mass >= minimumMass;
-        }
 
-        return true; // any rigidbody object if mass check is off
+        return true;
     }
 
     private void UpdatePlateState()
     {
-        if (_thingsOnPlate.Count > 0)
+        bool plateActive = _thingsOnPlate.Count > 0;
+
+        // Doors
+        foreach (var door in doors)
         {
-            // Something is on the plate → open
-            door.OpenDoor();
+            if (door == null) continue;
+            if (plateActive)
+                door.OpenDoor();
+            else
+                door.CloseDoor();
         }
-        else
+
+        // Barriers: hide/show children instead of disabling the whole GameObject
+        foreach (var barrier in barriers)
         {
-            // Plate is empty → close
-            door.CloseDoor();
+            if (barrier == null) continue;
+
+            foreach (Transform child in barrier.transform)
+            {
+                child.gameObject.SetActive(!plateActive); // pressed = hide, released = show
+            }
+
+            // Also disable colliders on the barrier itself
+            var colliders = barrier.GetComponents<Collider>();
+            foreach (var col in colliders)
+            {
+                if (col != null)
+                    col.enabled = !plateActive;
+            }
         }
     }
 }

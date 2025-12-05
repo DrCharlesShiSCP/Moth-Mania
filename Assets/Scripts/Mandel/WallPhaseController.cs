@@ -5,7 +5,7 @@ public class WallPhaseController : MonoBehaviour
 {
     [Header("References")]
     public PhaseObject phaseObject;
-    public MothFlockController mothController;   // Flock&GoggleControl
+    public MothFlockController mothController;
 
     [Header("Headlight Behavior")]
     [Tooltip("If true, wall is solid when headlight is ON.")]
@@ -16,19 +16,20 @@ public class WallPhaseController : MonoBehaviour
     [Tooltip("If true, when the plate is pressed, the wall will always be OFF (ghost).")]
     public bool crateDisablesWall = true;
 
-    bool _platePressed = false;
+    private bool _platePressed = false;
 
     void Awake()
     {
         if (phaseObject == null)
             phaseObject = GetComponent<PhaseObject>();
 
-        // Try to auto-link if not assigned in Inspector
         if (mothController == null)
             mothController = MothFlockController.Instance;
     }
 
-    // Called by PressurePlatePhase
+    /// <summary>
+    /// Called by PressurePlateTrigger to notify plate state.
+    /// </summary>
     public void SetPlatePressed(bool pressed)
     {
         _platePressed = pressed;
@@ -40,34 +41,46 @@ public class WallPhaseController : MonoBehaviour
         UpdatePhase();
     }
 
+    /// <summary>
+    /// Calculates the current solid/ghost state based on plate and headlight.
+    /// </summary>
     void UpdatePhase()
     {
         if (phaseObject == null)
             return;
 
-        bool solid = true; // default base state
+        bool solid;
 
-        // 1) HEADLIGHT CONTROL
-        if (respondToHeadlight)
-        {
-            if (mothController == null)
-            {
-                Debug.LogWarning("WallPhaseController: no MothFlockController assigned, headlight will not affect wall.");
-            }
-            else
-            {
-                bool headlightOn = mothController.headlightOn;
-                solid = solidWhenHeadlightOn ? headlightOn : !headlightOn;
-            }
-        }
-
-        // 2) PRESSURE PLATE OVERRIDE
+        // 1) PRESSURE PLATE OVERRIDE (always highest priority)
         if (crateDisablesWall && _platePressed)
         {
-            // Crate on plate → wall always OFF/ghost
-            solid = false;
+            solid = false;  // plate forces wall OFF
+            phaseObject.SetSolid(solid);
+            return;
+        }
+
+        // 2) HEADLIGHT LOGIC (only applies if plate isn't pressing)
+        if (respondToHeadlight && mothController != null)
+        {
+            bool headlightOn = mothController.headlightOn;
+            solid = solidWhenHeadlightOn ? headlightOn : !headlightOn;
+        }
+        else
+        {
+            solid = true; // default fallback
         }
 
         phaseObject.SetSolid(solid);
+    }
+
+    /// <summary>
+    /// External method to immediately set wall solid/ghost by pressure plate or other triggers.
+    /// </summary>
+    public void SetActiveByPlate(bool active)
+    {
+        if (phaseObject != null)
+        {
+            phaseObject.SetSolid(active); // true = solid/visible, false = ghost/invisible
+        }
     }
 }

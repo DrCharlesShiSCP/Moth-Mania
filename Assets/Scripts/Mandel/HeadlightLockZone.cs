@@ -10,8 +10,15 @@ public class HeadlightLockZone : MonoBehaviour
     [Tooltip("If true, this field actively blocks headlight toggling.")]
     public bool fieldActive = true;
 
-    // Track if the player is inside so we know whether to lock/unlock
+    // Tracks if the player is currently inside the trigger
     private bool playerInside = false;
+
+    [Header("Headlight Control")]
+    [Tooltip("If true, the zone forces the headlight ON. If false, it forces the headlight OFF.")]
+    public bool forceHeadlightOn = false;
+
+    [Tooltip("If true, the zone enforces the forced headlight state while the player is inside.")]
+    public bool enforceForcedState = true;
 
     [Header("VFX")]
     [Tooltip("Optional spark effect that plays when the field is disabled.")]
@@ -41,11 +48,14 @@ public class HeadlightLockZone : MonoBehaviour
 
             if (MothFlockController.Instance != null)
             {
-                // 1) Lock toggle
+                // Lock toggle ability
                 MothFlockController.Instance.canToggleHeadlight = false;
 
-                // 2) Force headlight OFF while in the field
-                MothFlockController.Instance.SetHeadlight(false);
+                // Enforce forced state if enabled
+                if (enforceForcedState)
+                {
+                    MothFlockController.Instance.SetHeadlight(forceHeadlightOn);
+                }
             }
         }
     }
@@ -60,6 +70,7 @@ public class HeadlightLockZone : MonoBehaviour
 
             if (MothFlockController.Instance != null)
             {
+                // Restore toggle ability
                 MothFlockController.Instance.canToggleHeadlight = true;
             }
         }
@@ -71,19 +82,16 @@ public class HeadlightLockZone : MonoBehaviour
     /// </summary>
     public void DisableField()
     {
-        // Already disabled? Do nothing.
         if (!fieldActive) return;
 
         fieldActive = false;
 
-        // If the player is currently inside the zone,
-        // immediately restore their ability to toggle the headlight.
+        // Restore toggle ability if player is inside
         if (playerInside && MothFlockController.Instance != null)
         {
             MothFlockController.Instance.canToggleHeadlight = true;
         }
 
-        // Trigger spark and fade VFX once
         PlayShutdownVFX();
     }
 
@@ -98,27 +106,26 @@ public class HeadlightLockZone : MonoBehaviour
             sparkEffect.Play();
         }
 
-        // Start fade-out on mesh renderers
+        // Begin fade-out
         if (renderersToFade != null && renderersToFade.Length > 0 && fadeDuration > 0f)
         {
             StartCoroutine(FadeRenderersOut());
         }
         else if (disableCollidersAfterFade)
         {
-            // If no fade, we can just immediately disable colliders
             DisableAllColliders();
         }
     }
 
     private IEnumerator FadeRenderersOut()
     {
-        // Cache original colors per material
         var allMaterials = new System.Collections.Generic.List<Material[]>();
+
+        // Cache materials
         foreach (var mr in renderersToFade)
         {
             if (mr != null)
             {
-                // We clone this so we don't permanently modify shared materials across instances
                 var mats = mr.materials;
                 allMaterials.Add(mats);
             }
@@ -136,7 +143,6 @@ public class HeadlightLockZone : MonoBehaviour
             float t = Mathf.Clamp01(elapsed / fadeDuration);
             float alpha = 1f - t;
 
-            // Apply alpha to all materials
             for (int i = 0; i < renderersToFade.Length; i++)
             {
                 var mr = renderersToFade[i];
@@ -159,7 +165,7 @@ public class HeadlightLockZone : MonoBehaviour
             yield return null;
         }
 
-        // Ensure alpha is fully 0 at the end
+        // Ensure final alpha is 0
         for (int i = 0; i < renderersToFade.Length; i++)
         {
             var mr = renderersToFade[i];
@@ -178,7 +184,6 @@ public class HeadlightLockZone : MonoBehaviour
                 }
             }
 
-            // Optionally just disable the renderer entirely
             mr.enabled = false;
         }
 
