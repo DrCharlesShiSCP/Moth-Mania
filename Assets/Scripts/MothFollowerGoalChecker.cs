@@ -41,7 +41,7 @@ public class MothFollowerGoalChecker : MonoBehaviour
         if (pollIntervalSeconds > 0f && Time.time < nextPollTime) return;
 
         int currentFollowers = TryGetFollowerCount(flock);
-
+        Debug.Log($"[MothFollowerGoalChecker] followers={currentFollowers}, required={requiredFollowers}, EnoughMoths={doorScript.EnoughMoths}");
         if (currentFollowers >= Mathf.CeilToInt(requiredFollowers))
         {
             if (!hasPassed)

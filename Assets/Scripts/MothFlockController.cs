@@ -109,13 +109,16 @@ public class MothFlockController : MonoBehaviour
 
     void Start()
     {
-        // Auto-fill mothBabies if empty
-        if (mothBabies == null || mothBabies.Count == 0)
+        mothBabies = new List<Transform>();
+        GameObject[] foundBabies = GameObject.FindGameObjectsWithTag("babies");
+        foreach (GameObject baby in foundBabies)
         {
-            mothBabies = new List<Transform>();
-            GameObject[] foundBabies = GameObject.FindGameObjectsWithTag("babies");
-            foreach (GameObject baby in foundBabies)
-                mothBabies.Add(baby.transform);
+            mothBabies.Add(baby.transform);
+        }
+
+        if (mothBabies.Count == 0)
+        {
+            Debug.LogWarning("[MothFlockController] No objects with tag 'babies' found in scene.");
         }
 
         if (player == null)
