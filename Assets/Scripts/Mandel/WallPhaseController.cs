@@ -27,9 +27,18 @@ public class WallPhaseController : MonoBehaviour
             mothController = MothFlockController.Instance;
     }
 
-    /// <summary>
-    /// Called by PressurePlateTrigger to notify plate state.
-    /// </summary>
+#if UNITY_EDITOR
+    // Editor-only auto assignment
+    void OnValidate()
+    {
+        if (mothController == null)
+        {
+            // Search ONLY in editor
+            mothController = FindAnyObjectByType<MothFlockController>();
+        }
+    }
+#endif
+
     public void SetPlatePressed(bool pressed)
     {
         _platePressed = pressed;
@@ -41,9 +50,6 @@ public class WallPhaseController : MonoBehaviour
         UpdatePhase();
     }
 
-    /// <summary>
-    /// Calculates the current solid/ghost state based on plate and headlight.
-    /// </summary>
     void UpdatePhase()
     {
         if (phaseObject == null)
@@ -51,15 +57,13 @@ public class WallPhaseController : MonoBehaviour
 
         bool solid;
 
-        // 1) PRESSURE PLATE OVERRIDE (always highest priority)
         if (crateDisablesWall && _platePressed)
         {
-            solid = false;  // plate forces wall OFF
+            solid = false;
             phaseObject.SetSolid(solid);
             return;
         }
 
-        // 2) HEADLIGHT LOGIC (only applies if plate isn't pressing)
         if (respondToHeadlight && mothController != null)
         {
             bool headlightOn = mothController.headlightOn;
@@ -67,20 +71,15 @@ public class WallPhaseController : MonoBehaviour
         }
         else
         {
-            solid = true; // default fallback
+            solid = true;
         }
 
         phaseObject.SetSolid(solid);
     }
 
-    /// <summary>
-    /// External method to immediately set wall solid/ghost by pressure plate or other triggers.
-    /// </summary>
     public void SetActiveByPlate(bool active)
     {
         if (phaseObject != null)
-        {
-            phaseObject.SetSolid(active); // true = solid/visible, false = ghost/invisible
-        }
+            phaseObject.SetSolid(active);
     }
 }

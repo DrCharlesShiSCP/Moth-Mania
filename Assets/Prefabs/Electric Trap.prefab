@@ -31,7 +31,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0.0000038146973, y: 10.5, z: -31.500004}
-  m_LocalScale: {x: 1, y: 1, z: 3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6689771684648717791}
@@ -136,7 +136,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9273a8df255732f40ae189e383d6f1ab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  thisdeals2damageAmount: 1
+  thisdeals2damageAmount: 3
 --- !u!1 &8558563095509313302
 GameObject:
   m_ObjectHideFlags: 0
