@@ -3,9 +3,11 @@ using UnityEngine;
 public class PlayerPickupThrow : MonoBehaviour
 {
     [Header("Inputs")]
+    [Tooltip("E = pick up when empty, drop when holding")]
     public KeyCode pickupKey = KeyCode.E;
-    public KeyCode throwKey = KeyCode.Mouse0; // Left click
-    public KeyCode dropKey = KeyCode.R;      // Optional drop
+
+    [Tooltip("R = throw while holding")]
+    public KeyCode throwKey = KeyCode.R;
 
     [Header("Pickup (Radius)")]
     public Transform feet;             // origin for the radius
@@ -53,7 +55,11 @@ public class PlayerPickupThrow : MonoBehaviour
             {
                 var temp = new GameObject("FeetAuto");
                 temp.transform.SetParent(transform);
-                temp.transform.position = new Vector3(col.bounds.center.x, col.bounds.min.y + 0.02f, col.bounds.center.z);
+                temp.transform.position = new Vector3(
+                    col.bounds.center.x,
+                    col.bounds.min.y + 0.02f,
+                    col.bounds.center.z
+                );
                 feet = temp.transform;
             }
         }
@@ -69,25 +75,51 @@ public class PlayerPickupThrow : MonoBehaviour
 
         // Also honor Horizontal axis if you’re feeding A/D into it
         float axis = Input.GetAxisRaw("Horizontal");
-        if (axis > 0.5f) lastZDir = +1; // treat right as front (+Z)
+        if (axis > 0.5f) lastZDir = +1;   // treat right as front (+Z)
         else if (axis < -0.5f) lastZDir = -1; // left as back (-Z)
 
+        // =====================================================
+        // ===  When holding an object =========================
+        // =====================================================
         if (heldRB != null)
         {
             var target = CurrentHoldPoint();
             if (target != null && (liveFlipWhileHolding || !HasSignChangedThisFrame()))
             {
-                heldRB.position = Vector3.Lerp(heldRB.position, target.position, holdLerp * Time.deltaTime);
-                if (freezeHeldRotation) heldRB.rotation = target.rotation;
+                heldRB.position = Vector3.Lerp(
+                    heldRB.position,
+                    target.position,
+                    holdLerp * Time.deltaTime
+                );
+
+                if (freezeHeldRotation)
+                    heldRB.rotation = target.rotation;
             }
 
-            if (Input.GetKeyDown(throwKey)) ThrowHeld();
-            else if (Input.GetKeyDown(dropKey)) ReleaseHeld(applyThrow: false);
+            // Throw on R
+            if (Input.GetKeyDown(throwKey))
+            {
+                ThrowHeld();
+                return;
+            }
+
+            // Drop on E (toggle behavior)
+            if (Input.GetKeyDown(pickupKey))
+            {
+                ReleaseHeld(applyThrow: false);
+                return;
+            }
+
             return;
         }
 
+        // =====================================================
+        // ===  Not holding anything — E picks up  =============
+        // =====================================================
         if (Input.GetKeyDown(pickupKey))
+        {
             TryPickupByRadius();
+        }
     }
 
     void TryPickupByRadius()
@@ -114,7 +146,11 @@ public class PlayerPickupThrow : MonoBehaviour
             }
 
             float d = (c.ClosestPoint(origin) - origin).sqrMagnitude;
-            if (d < bestDist) { bestDist = d; best = c; }
+            if (d < bestDist)
+            {
+                bestDist = d;
+                best = c;
+            }
         }
 
         if (best != null && best.attachedRigidbody != null)
@@ -150,17 +186,22 @@ public class PlayerPickupThrow : MonoBehaviour
         Vector3 vel = dir * zThrowSpeed + Vector3.up * upwardThrowImpulse;
 
         if (inheritPlayerZVelocity && playerRB != null)
-            vel.z += playerRB.linearVelocity.z;
+            vel.z += playerRB.linearVelocity.z; // keeping your original use of linearVelocity
 
         ReleaseHeld(applyThrow: true, throwVelocity: vel);
     }
 
     void ReleaseHeld(bool applyThrow, Vector3 throwVelocity = default)
     {
+        if (heldRB == null) return;
+
         heldRB.isKinematic = false;
         heldRB.useGravity = originalUseGravity;
 
-        foreach (var c in heldColliders) c.enabled = true;
+        if (heldColliders != null)
+        {
+            foreach (var c in heldColliders) c.enabled = true;
+        }
 
         if (applyThrow)
         {
@@ -171,7 +212,12 @@ public class PlayerPickupThrow : MonoBehaviour
 
         heldRB = null;
         heldColliders = null;
-        sourceOnPlayer.PlayOneShot(metaldrop);
+
+        if (sourceOnPlayer != null && metaldrop != null)
+        {
+            sourceOnPlayer.PlayOneShot(metaldrop);
+        }
+
         Debug.Log("DroppedPipe");
     }
 
