@@ -149,7 +149,7 @@ Transform:
   m_GameObject: {fileID: 1673993526137226083}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.0960002, z: 0}
+  m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -336,7 +336,7 @@ CapsuleCollider:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2658323954890430902}
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 13400000, guid: 6ec4ce802407bbe40b7d95047fdd9348, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -366,13 +366,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 10
   airControlTimes: 0.6
-  acceleration: 200
-  deceleration: 200
+  acceleration: 100
+  deceleration: 100
   maxFallSpeed: -60
   jumpForce: 7.5
   coyoteTime: 0.12
   jumpBufferTime: 0.12
   wallCheckDistance: 0.55
+  wallCheckRadius: 0.3
   wallSlideSpeed: -2.5
   wallJumpZPush: 7.5
   wallJumpUpForce: 12
@@ -389,15 +390,26 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 128
   groundCheck: {fileID: 3479881659607972944}
-  groundCheckRadius: 0.2
+  groundCheckRadius: 1
   standingHeight: 1
   slidingHeight: 1
   standingCenter: {x: 0, y: 0.5, z: 0}
   slidingCenter: {x: 0, y: 0.25, z: 0}
   moveAxis: Horizontal
+  verticalAxis: Vertical
   jumpKey: 32
   fallGravityMultiplier: 3
   lowJumpMultiplier: 2
+  freezeAllRotation: 1
+  ladderInteractKey: 101
+  ladderMagnet: 26
+  ladderMaxDrift: 0.25
+  ladderDetachInputThreshold: 0.35
+  ladderClimbAccel: 60
+  ladderVerticalDeadzone: 0.15
+  ladderLoseContactGrace: 0.12
+  ladderEToExit: 1
+  ladderJumpToExit: 1
 --- !u!54 &6302831618480465218
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -422,9 +434,9 @@ Rigidbody:
   m_ImplicitTensor: 1
   m_UseGravity: 1
   m_IsKinematic: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_Constraints: 114
-  m_CollisionDetection: 0
+  m_CollisionDetection: 3
 --- !u!114 &2792781871184626488
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -438,10 +450,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pickupKey: 101
-  throwKey: 323
-  dropKey: 114
+  throwKey: 114
   feet: {fileID: 0}
-  pickupRadius: 0.6
+  pickupRadius: 1
   preferClosest: 1
   holdPointFrontZ: {fileID: 644759349088819897}
   holdPointBackZ: {fileID: 7934688664654839070}
@@ -567,8 +578,17 @@ MonoBehaviour:
   iFrames: 0.75
   enemyLayers:
     serializedVersion: 2
-    m_Bits: 1024
+    m_Bits: 3072
   enemyTag: Enemy
+  audioSource: {fileID: 7179671045617709603}
+  hitClip: {fileID: 8300000, guid: 8be7e230d373cd646b6cba3bcab65bce, type: 3}
+  hitVolume: 0.5
+  hitPitchRange: {x: 0.95, y: 1.05}
+  shakeTarget: {fileID: 6716514947586956232}
+  shakeDuration: 0.12
+  shakeAmplitude: 1
+  shakeFrequency: 100
+  shakeLocalPosition: 1
   onLifeLost:
     m_PersistentCalls:
       m_Calls:
@@ -782,7 +802,7 @@ Transform:
   m_GameObject: {fileID: 4453884513781891954}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.318, z: -1.007}
+  m_LocalPosition: {x: 0, y: 0, z: -1}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -871,12 +891,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6716514947586956232}
+  - component: {fileID: 2219874095901764379}
   - component: {fileID: 6157366494739967321}
   - component: {fileID: 6759341785813785120}
   - component: {fileID: 7295798085552483503}
   m_Layer: 3
   m_Name: Main Camera
-  m_TagString: Player
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -890,12 +911,25 @@ Transform:
   m_GameObject: {fileID: 5033181843323211262}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 10.63, y: 1.0700002, z: 0}
+  m_LocalPosition: {x: 10.5, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2458845524050283337}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+--- !u!114 &2219874095901764379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5033181843323211262}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23bf4f9d3594afa4fad388b94ad98d90, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  frequency: 25
 --- !u!20 &6157366494739967321
 Camera:
   m_ObjectHideFlags: 0
@@ -1027,7 +1061,7 @@ Transform:
   m_GameObject: {fileID: 6801461301203901194}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.318, z: 1.004}
+  m_LocalPosition: {x: 0, y: 0, z: 1}
   m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []

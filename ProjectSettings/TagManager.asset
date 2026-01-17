@@ -8,6 +8,8 @@ TagManager:
   - babies
   - Throwable
   - MothRoamBox
+  - NightCrawler
+  - ExitDoor
   layers:
   - Default
   - TransparentFX

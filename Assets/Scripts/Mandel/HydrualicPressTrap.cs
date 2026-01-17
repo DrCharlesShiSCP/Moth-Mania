@@ -1,103 +1,161 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System.Collections;
+using UnityEngine;
 
+[DisallowMultipleComponent]
 public class HydraulicPressTrap : MonoBehaviour
 {
     [Header("References")]
-    [Tooltip("The moving head of the press (has collider + kinematic rigidbody).")]
     public Transform pressHead;
-
-    [Tooltip("Rest position (usually close to the wall).")]
     public Transform startPoint;
-
-    [Tooltip("Fully extended position (where the player gets crushed).")]
     public Transform endPoint;
 
-    [Header("Timing")]
-    [Tooltip("Time between each press cycle while idle at start position.")]
-    public float idleTime = 2f;
-
-    [Tooltip("How long the small 'bounce' / wind-up lasts before the slam.")]
-    public float telegraphTime = 0.3f;
-
-    [Tooltip("How long the actual slam/extension takes.")]
-    public float extendTime = 0.15f;
-
-    [Tooltip("How long it stays fully extended before retracting.")]
-    public float holdTime = 0.3f;
-
-    [Tooltip("How long it takes to retract back to start.")]
-    public float retractTime = 0.4f;
+    [Header("Cycle Timing")]
+    public float idleTime = 1.5f;
+    public float telegraphTime = 0.35f;
+    public float extendTime = 0.12f;
+    public float holdTime = 0.15f;
+    public float retractTime = 0.45f;
 
     [Header("Telegraph / Bounce")]
-    [Tooltip("How far it pulls back during the wind-up (relative to startPoint).")]
-    public float bounceDistance = 0.15f;
+    public float bounceDistance = 0.12f;
 
-    [Header("Damage")]
-    [Tooltip("Tag used to identify the player.")]
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip warnClip;
+    public AudioClip slamClip;
+    public AudioClip riseClip;
+    [Range(0f, 1f)] public float warnVolume = 1f;
+    [Range(0f, 1f)] public float slamVolume = 1f;
+    [Range(0f, 1f)] public float riseVolume = 1f;
+
+    [Header("Proximity Audio Trigger")]
+    [Tooltip("Center point for proximity detection (can be offset).")]
+    public Transform proximityOrigin;
+
+    [Tooltip("Player must be within this radius for sounds to play.")]
+    public float proximityRadius = 10f;
+
+    [Tooltip("Optional looping ambience while player is nearby.")]
+    public AudioClip proximityLoop;
+    [Range(0f, 1f)] public float proximityLoopVolume = 0.5f;
+
+    [Header("Screenshake (on slam)")]
     public string playerTag = "Player";
+    public float shakeRadius = 8f;
+    public float slamShakeAmplitude = 0.25f;
+    public float slamShakeDuration = 0.18f;
 
+    [Header("Debug")]
+    public bool drawGizmos = true;
 
-    [Tooltip("Optional: should we only kill if it's in the fast slam phase?")]
-    public bool onlyKillWhileExtending = true;
-    public int livesToRemove = 3;
+    Vector3 _pullbackPos;
+    Transform _player;
+    bool _playerInProximity;
 
-    private enum PressState { Idle, Telegraph, Extending, Holding, Retracting }
-    private PressState _state = PressState.Idle;
+    Coroutine _loop;
 
-    private Vector3 _telegraphPos;
-    private Coroutine _loopRoutine;
-
-    private void Start()
+    void Awake()
     {
-        // Clamp head to start position initially
-        if (pressHead && startPoint)
-            pressHead.position = startPoint.position;
-
-        // Compute telegraph position (a small pull back from the startPoint)
-        if (startPoint && endPoint)
-        {
-            Vector3 slamDirection = (endPoint.position - startPoint.position).normalized;
-            // Move backwards along the opposite of slam direction
-            _telegraphPos = startPoint.position - slamDirection * bounceDistance;
-        }
-
-        _loopRoutine = StartCoroutine(PressLoop());
+        if (!pressHead) pressHead = transform;
+        if (!proximityOrigin) proximityOrigin = transform;
     }
 
-    private IEnumerator PressLoop()
+    void Start()
+    {
+        var p = GameObject.FindGameObjectWithTag(playerTag);
+        if (p) _player = p.transform;
+
+        if (startPoint)
+            pressHead.position = startPoint.position;
+
+        RecomputePullback();
+        _loop = StartCoroutine(PressLoop());
+    }
+
+    void Update()
+    {
+        UpdateProximity();
+    }
+
+    void UpdateProximity()
+    {
+        if (!_player || !proximityOrigin) return;
+
+        float dist = Vector3.Distance(_player.position, proximityOrigin.position);
+        bool inside = dist <= proximityRadius;
+
+        if (inside == _playerInProximity)
+            return;
+
+        _playerInProximity = inside;
+
+        // Start / stop looping ambience
+        if (audioSource && proximityLoop)
+        {
+            if (_playerInProximity)
+            {
+                audioSource.clip = proximityLoop;
+                audioSource.volume = proximityLoopVolume;
+                audioSource.loop = true;
+                audioSource.Play();
+            }
+            else
+            {
+                if (audioSource.clip == proximityLoop)
+                    audioSource.Stop();
+            }
+        }
+    }
+
+    IEnumerator PressLoop()
     {
         while (true)
         {
-            // 1. Idle at rest
-            _state = PressState.Idle;
             yield return new WaitForSeconds(idleTime);
 
-            // 2. Telegraph / bounce back
-            if (telegraphTime > 0f)
-            {
-                _state = PressState.Telegraph;
-                yield return MoveOverTime(pressHead.position, _telegraphPos, telegraphTime);
-            }
+            // WARNING
+            PlayIfNearby(warnClip, warnVolume);
+            yield return MoveOverTime(pressHead.position, _pullbackPos, telegraphTime);
 
-            // 3. Fast slam to end point
-            _state = PressState.Extending;
+            // SLAM
             yield return MoveOverTime(pressHead.position, endPoint.position, extendTime);
+            PlayIfNearby(slamClip, slamVolume);
+            ShakeIfPlayerNearby();
 
-            // 4. Hold extended
-            _state = PressState.Holding;
             yield return new WaitForSeconds(holdTime);
 
-            // 5. Retract back to start
-            _state = PressState.Retracting;
+            // RESET
+            PlayIfNearby(riseClip, riseVolume);
             yield return MoveOverTime(pressHead.position, startPoint.position, retractTime);
         }
     }
 
-    /// <summary>
-    /// Moves pressHead from 'from' to 'to' in 'duration' seconds using a simple lerp.
-    /// </summary>
-    private IEnumerator MoveOverTime(Vector3 from, Vector3 to, float duration)
+    void PlayIfNearby(AudioClip clip, float volume)
+    {
+        if (!_playerInProximity) return;
+        if (!audioSource || !clip) return;
+
+        audioSource.PlayOneShot(clip, volume);
+    }
+
+    void ShakeIfPlayerNearby()
+    {
+        if (!_player || SimpleCameraShake.Instance == null) return;
+
+        float dist = Vector3.Distance(_player.position, pressHead.position);
+        if (dist > shakeRadius) return;
+
+        SimpleCameraShake.Instance.Shake(slamShakeAmplitude, slamShakeDuration);
+    }
+
+    void RecomputePullback()
+    {
+        if (!startPoint || !endPoint) return;
+        Vector3 dir = (endPoint.position - startPoint.position).normalized;
+        _pullbackPos = startPoint.position - dir * bounceDistance;
+    }
+
+    IEnumerator MoveOverTime(Vector3 from, Vector3 to, float duration)
     {
         if (duration <= 0f)
         {
@@ -109,23 +167,18 @@ public class HydraulicPressTrap : MonoBehaviour
         while (t < 1f)
         {
             t += Time.deltaTime / duration;
-            float clamped = Mathf.Clamp01(t);
-            pressHead.position = Vector3.Lerp(from, to, clamped);
+            pressHead.position = Vector3.Lerp(from, to, Mathf.Clamp01(t));
             yield return null;
         }
 
         pressHead.position = to;
     }
 
-    /// <summary>
-    /// Put this on the SAME object that has the trigger collider.
-    /// If the collider is on PressHead, add this script to the parent
-    /// and also a small helper on the head that forwards collisions,
-    /// OR just move this whole script onto PressHead and wire references.
-    /// </summary>
-   
+    void OnDrawGizmosSelected()
+    {
+        if (!drawGizmos || !proximityOrigin) return;
 
-
-
-
+        Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.25f);
+        Gizmos.DrawWireSphere(proximityOrigin.position, proximityRadius);
+    }
 }

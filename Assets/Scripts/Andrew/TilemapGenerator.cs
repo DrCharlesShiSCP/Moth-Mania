@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Unity.AI.Navigation; // package: com.unity.ai.navigation
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.Serialization; // for FormerlySerializedAs
 using UnityEngine.Tilemaps;
 
@@ -8,7 +10,6 @@ public class TilemapGenerator : MonoBehaviour
 {
     [Header("Tilemap Settings")]
     public Tilemap tilemap;
-
 
     [Header("Visualization")]
     public bool showSolidBlocks = true;
@@ -34,6 +35,16 @@ public class TilemapGenerator : MonoBehaviour
 
     [Tooltip("Rebuild the NavMesh right after generating collisions (Play Mode).")]
     public bool rebuildNavMeshOnGenerate = true;
+
+    [Header("NavMesh Rebuild Safety (Play Mode)")]
+    [Tooltip("Disable all NavMeshAgents while rebuilding NavMesh to avoid 'agent not close enough' errors.")]
+    public bool disableAgentsDuringRebuild = true;
+
+    [Tooltip("After rebuilding, warp agents to the nearest NavMesh point if they are not on it.")]
+    public bool warpAgentsToNavMeshAfterRebuild = true;
+
+    [Tooltip("Search radius used to snap agents onto the NavMesh after rebuild.")]
+    public float warpSampleRadius = 5f;
 
     private static Mesh cubeMesh;
     private static Material solidMaterial;
@@ -103,13 +114,13 @@ public class TilemapGenerator : MonoBehaviour
         if (navSurface == null)
             navSurface = gameObject.AddComponent<NavMeshSurface>();
 
+        // Ensure nav surface settings are aligned with this generator
         navSurface.layerMask = groundMask;
         navSurface.collectObjects = collectChildrenOnly ? CollectObjects.Children : CollectObjects.All;
-       
 
-        // Optional tuning:
-        // navSurface.overrideVoxelSize = true; navSurface.voxelSize = 0.066f;
-        // navSurface.overrideTileSize  = true; navSurface.tileSize  = 64;
+        // Tilemap collision prefabs are almost always best baked from colliders.
+        // (This prevents many "navmesh height" / "no mesh" problems.)
+        navSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
     }
 
     [ContextMenu("Generate Collisions (Editor)")]
@@ -154,13 +165,7 @@ public class TilemapGenerator : MonoBehaviour
                 if (tilemap.GetTile(cell) == null) continue;
 
                 Vector3 worldPos = tilemap.GetCellCenterWorld(cell);
-                var go = Instantiate(collisionPrefab, worldPos, Quaternion.identity, _collidersRoot);
-
-                // (Optional) force the spawned tile to be on a specific layer contained in groundMask
-                // Example: if your "Ground" layer exists, set it:
-                // int groundLayer = LayerMask.NameToLayer("Ground");
-                // if (groundLayer >= 0) go.layer = groundLayer;
-
+                Instantiate(collisionPrefab, worldPos, Quaternion.identity, _collidersRoot);
                 count++;
             }
         }
@@ -177,10 +182,55 @@ public class TilemapGenerator : MonoBehaviour
     public void RebuildNavMeshNow()
     {
         EnsureRootsAndSurface();
+
+        // Keep surface settings consistent
         navSurface.layerMask = groundMask;
         navSurface.collectObjects = collectChildrenOnly ? CollectObjects.Children : CollectObjects.All;
+        navSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+
+        List<NavMeshAgent> disabledAgents = null;
+
+        // 1) Disable agents to prevent errors during RemoveData/BuildNavMesh refresh
+        if (Application.isPlaying && disableAgentsDuringRebuild)
+        {
+            var agents = FindObjectsOfType<NavMeshAgent>(true);
+            disabledAgents = new List<NavMeshAgent>(agents.Length);
+
+            foreach (var a in agents)
+            {
+                if (a == null) continue;
+                if (!a.enabled) continue;
+
+                a.enabled = false;
+                disabledAgents.Add(a);
+            }
+        }
+
+        // 2) Rebuild navmesh data cleanly
+        navSurface.RemoveData();
         navSurface.BuildNavMesh();
-        Debug.Log("[TilemapGenerator] NavMesh rebuilt.");
+
+        // 3) Re-enable and optionally warp agents onto navmesh
+        if (Application.isPlaying && disabledAgents != null)
+        {
+            foreach (var a in disabledAgents)
+            {
+                if (a == null) continue;
+
+                a.enabled = true;
+
+                if (warpAgentsToNavMeshAfterRebuild && !a.isOnNavMesh)
+                {
+                    if (NavMesh.SamplePosition(a.transform.position, out var hit, warpSampleRadius, NavMesh.AllAreas))
+                    {
+                        a.Warp(hit.position);
+                    }
+                    // If sample fails, we leave it enabled; its own scripts should guard against isOnNavMesh.
+                }
+            }
+        }
+
+        Debug.Log("[TilemapGenerator] NavMesh rebuilt (agents safely handled).");
     }
 
     private void OnDrawGizmos()
